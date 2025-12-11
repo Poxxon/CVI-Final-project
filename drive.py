@@ -95,3 +95,34 @@ def send_control(steering_angle, throttle):
     )
 
 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Remote Driving")
+    parser.add_argument(
+        "model",
+        type=str,
+        help="Path to model h5 file. Model should be on the same path.",
+    )
+    parser.add_argument(
+        "image_folder",
+        type=str,
+        nargs="?",
+        default="",
+        help="Path to image folder for recording run (optional).",
+    )
+    args = parser.parse_args()
+
+    # load trained model
+    model = load_model(args.model)
+
+    # setup recording folder if needed
+    if args.image_folder != "":
+        print("Creating image folder at {}".format(args.image_folder))
+        if os.path.exists(args.image_folder):
+            shutil.rmtree(args.image_folder)
+        os.makedirs(args.image_folder)
+        print("RECORDING THIS RUN ...")
+    else:
+        print("NOT RECORDING THIS RUN ...")
+
+    print("Server running on http://0.0.0.0:4567")
+    eventlet.wsgi.server(eventlet.listen(("", 4567)), app)
