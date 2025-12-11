@@ -41,3 +41,40 @@ class SimplePIController:
         return self.Kp * self.error + self.Ki * self.integral
 
 
+controller = SimplePIController(0.1, 0.002)
+SET_SPEED = 6.0
+controller.set_desired(SET_SPEED)
+
+
+@sio.on("telemetry")
+def telemetry(sid, data):
+    if not data:
+        sio.emit("manual", data={}, skip_sid=True)
+        return
+
+    # speed from simulator
+    speed = float(data["speed"])
+
+    # image from simulator
+    img_str = data["image"]
+    image = Image.open(BytesIO(base64.b64decode(img_str)))
+    image_array = np.asarray(image)
+
+    # same preprocessing as training
+    proc_img = preprocess_image(image_array)
+    proc_img = np.expand_dims(proc_img, axis=0)
+
+    steering_angle = float(model.predict(proc_img, batch_size=1))
+    throttle = controller.update(speed)
+
+    print(f"Steering: {steering_angle:.4f}, Throttle: {throttle:.3f}")
+
+    send_control(steering_angle, throttle)
+
+    # optional: record frames
+    if args.image_folder != "":
+        timestamp = datetime.utcnow().strftime("%Y_%m_%d_%H_%M_%S_%f")[:-3]
+        img_name = os.path.join(args.image_folder, timestamp)
+        image.save(f"{img_name}.jpg")
+
+
