@@ -78,3 +78,20 @@ def telemetry(sid, data):
         image.save(f"{img_name}.jpg")
 
 
+@sio.on("connect")
+def connect(sid, environ):
+    print("Connected:", sid)
+    send_control(0, 0)
+
+
+def send_control(steering_angle, throttle):
+    sio.emit(
+        "steer",
+        data={
+            "steering_angle": str(steering_angle),
+            "throttle": str(throttle),
+        },
+        skip_sid=True,
+    )
+
+
